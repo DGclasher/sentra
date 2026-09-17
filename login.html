@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sentra Login</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 520px;
+            margin: 80px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 24px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            cursor: pointer;
+        }
+
+        pre {
+            margin-top: 20px;
+            padding: 12px;
+            background: #f5f5f5;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Sentra Login</h1>
+
+<form id="loginForm">
+
+    <label for="email">Email</label>
+    <input
+        id="email"
+        type="email"
+        required
+        autocomplete="username"
+    />
+
+    <label for="password">Password</label>
+    <input
+        id="password"
+        type="password"
+        required
+        autocomplete="current-password"
+    />
+
+    <button id="loginButton" type="submit">
+        Login
+    </button>
+</form>
+
+<pre id="result"></pre>
+
+<script>
+    // ==============================
+    // Cognito configuration
+    // ==============================
+
+    const COGNITO_REGION = "us-east-1";
+
+    const COGNITO_CLIENT_ID =
+        "17cubucr8ln5m4gralm4hh0r95";
+
+    const COGNITO_ENDPOINT =
+        `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/`;
+
+
+    // ==============================
+    // API Gateway configuration
+    // ==============================
+
+    const API_URL =
+        "https://29z5qm8jke.execute-api.us-east-1.amazonaws.com/test";
+
+
+    // ==============================
+    // DOM elements
+    // ==============================
+
+    const loginForm =
+        document.getElementById("loginForm");
+
+    const loginButton =
+        document.getElementById("loginButton");
+
+    const result =
+        document.getElementById("result");
+
+
+    // ==============================
+    // Login
+    // ==============================
+
+    loginForm.addEventListener("submit", async (event) => {
+
+        event.preventDefault();
+
+        const email =
+            document.getElementById("email").value.trim();
+
+        const password =
+            document.getElementById("password").value;
+
+        result.textContent = "Logging in...";
+        loginButton.disabled = true;
+
+        try {
+
+            // ------------------------------
+            // Step 1: Authenticate with Cognito
+            // ------------------------------
+
+            const cognitoResponse = await fetch(
+                COGNITO_ENDPOINT,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/x-amz-json-1.1",
+
+                        "X-Amz-Target":
+                            "AWSCognitoIdentityProviderService.InitiateAuth"
+                    },
+
+                    body: JSON.stringify({
+                        AuthFlow: "USER_PASSWORD_AUTH",
+
+                        ClientId:
+                            COGNITO_CLIENT_ID,
+
+                        AuthParameters: {
+                            USERNAME: email,
+                            PASSWORD: password
+                        }
+                    })
+                }
+            );
+
+            const cognitoData =
+                await cognitoResponse.json();
+
+            if (!cognitoResponse.ok) {
+                throw new Error(
+                    cognitoData.message ||
+                    cognitoData.Message ||
+                    "Cognito login failed"
+                );
+            }
+
+
+            // ------------------------------
+            // Step 2: Extract tokens
+            // ------------------------------
+
+            const authResult =
+                cognitoData.AuthenticationResult;
+
+            if (!authResult) {
+                throw new Error(
+                    "Cognito did not return an authentication result"
+                );
+            }
+
+            const accessToken =
+                authResult.AccessToken;
+
+            const idToken =
+                authResult.IdToken;
+
+            const refreshToken =
+                authResult.RefreshToken;
+
+
+            if (!accessToken) {
+                throw new Error(
+                    "Cognito did not return an access token"
+                );
+            }
+
+
+            // ------------------------------
+            // Step 3: Save tokens
+            // ------------------------------
+
+            // Local development only.
+            localStorage.setItem(
+                "access_token",
+                accessToken
+            );
+
+            localStorage.setItem(
+                "id_token",
+                idToken
+            );
+
+            if (refreshToken) {
+                localStorage.setItem(
+                    "refresh_token",
+                    refreshToken
+                );
+            }
+
+
+            result.textContent =
+                "Login successful.\n\n" +
+                "Calling API Gateway...";
+
+
+            // ------------------------------
+            // Step 4: Call API Gateway
+            // ------------------------------
+
+            const apiResponse =
+                await fetch(API_URL, {
+                    method: "GET",
+
+                    headers: {
+                        "Authorization":
+                            `Bearer ${accessToken}`,
+                    }
+                });
+
+
+            // Try to parse JSON response
+            let apiData;
+
+            try {
+                apiData = await apiResponse.json();
+            } catch {
+                apiData = await apiResponse.text();
+            }
+
+
+            // ------------------------------
+            // Step 5: Handle API response
+            // ------------------------------
+
+            if (!apiResponse.ok) {
+
+                result.textContent =
+                    JSON.stringify(
+                        {
+                            message:
+                                "Cognito login succeeded, but API Gateway rejected the request",
+
+                            status:
+                                apiResponse.status,
+
+                            response:
+                                apiData
+                        },
+                        null,
+                        2
+                    );
+
+                return;
+            }
+
+
+            result.textContent =
+                JSON.stringify(
+                    {
+                        message:
+                            "Login and API Gateway authentication successful",
+
+                        api_gateway_response:
+                            apiData
+                    },
+                    null,
+                    2
+                );
+
+        } catch (error) {
+
+            console.error(error);
+
+            result.textContent =
+                `Error: ${error.message}`;
+
+        } finally {
+
+            loginButton.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>

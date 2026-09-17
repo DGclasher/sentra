@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sentra Sign Up</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 420px;
+            margin: 60px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        pre {
+            margin-top: 20px;
+            padding: 12px;
+            background: #f5f5f5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Create Sentra Account</h1>
+
+<form id="signupForm">
+
+    <label for="firstName">First Name</label>
+    <input
+        id="firstName"
+        type="text"
+        required
+        autocomplete="given-name"
+    />
+
+    <label for="lastName">Last Name</label>
+    <input
+        id="lastName"
+        type="text"
+        required
+        autocomplete="family-name"
+    />
+
+    <label for="email">Email</label>
+    <input
+        id="email"
+        type="email"
+        required
+        autocomplete="email"
+    />
+
+    <label for="password">Password</label>
+    <input
+        id="password"
+        type="password"
+        required
+        autocomplete="new-password"
+    />
+
+    <button type="submit">
+        Create Account
+    </button>
+</form>
+
+<pre id="result"></pre>
+
+<script>
+    // ==============================
+    // Cognito configuration
+    // ==============================
+
+    const COGNITO_REGION = "us-east-1";
+    const COGNITO_CLIENT_ID = "17cubucr8ln5m4gralm4hh0r95";
+
+    const COGNITO_ENDPOINT =
+        `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/`;
+
+    // ==============================
+    // Sign up
+    // ==============================
+
+    document
+        .getElementById("signupForm")
+        .addEventListener("submit", async (event) => {
+
+            event.preventDefault();
+
+            const firstName =
+                document.getElementById("firstName").value;
+
+            const lastName =
+                document.getElementById("lastName").value;
+
+            const email =
+                document.getElementById("email").value;
+
+            const password =
+                document.getElementById("password").value;
+
+            const result =
+                document.getElementById("result");
+
+            result.textContent = "Creating account...";
+
+            try {
+
+                const response = await fetch(
+                    COGNITO_ENDPOINT,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/x-amz-json-1.1",
+
+                            "X-Amz-Target":
+                                "AWSCognitoIdentityProviderService.SignUp"
+                        },
+
+                        body: JSON.stringify({
+                            ClientId: COGNITO_CLIENT_ID,
+
+                            Username: email,
+
+                            Password: password,
+
+                            UserAttributes: [
+                                {
+                                    Name: "email",
+                                    Value: email
+                                },
+                                {
+                                    Name: "given_name",
+                                    Value: firstName
+                                },
+                                {
+                                    Name: "family_name",
+                                    Value: lastName
+                                }
+                            ]
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message ||
+                        data.Message ||
+                        "Signup failed"
+                    );
+                }
+
+                result.textContent =
+                    JSON.stringify(
+                        {
+                            message: "Account created successfully",
+                            user_sub: data.UserSub,
+                            user_confirmed: data.UserConfirmed,
+                            code_delivery_details:
+                                data.CodeDeliveryDetails
+                        },
+                        null,
+                        2
+                    );
+
+            } catch (error) {
+
+                console.error(error);
+
+                result.textContent =
+                    `Signup failed: ${error.message}`;
+            }
+        });
+</script>
+
+</body>
+</html>
