@@ -1,27 +1,20 @@
+from fastapi import HTTPException
+from fastapi.testclient import TestClient
 from unittest.mock import Mock
 
 import pytest
-from fastapi.testclient import TestClient
-from fastapi import HTTPException
 
 from app.api import routes
 from app.main import app
 from app.service.user_service import UserService
 
 
-class FakeAuthService:
-    async def verify_access_token(self, token):
-        assert token == "valid-token"
-        return {"username": "user-123"}
-
-
 @pytest.fixture
-def client(monkeypatch):
-    monkeypatch.setattr(routes, "auth_service", FakeAuthService())
+def client():
     return TestClient(app)
 
 
-def test_get_me_uses_username_from_token_and_filters_attributes(client, monkeypatch):
+def test_get_me_uses_gateway_user_id_and_filters_attributes(client, monkeypatch):
     user_service = Mock()
     user_service.get_user.return_value = {
         "email": "user@example.com",
@@ -33,8 +26,8 @@ def test_get_me_uses_username_from_token_and_filters_attributes(client, monkeypa
 
     response = client.get(
         "/api/v1/me",
-        headers={"Authorization": "Bearer valid-token"},
-        params={"username": "attacker"},
+        headers={"X-User-Id": "user-123"},
+        params={"userId": "attacker"},
     )
 
     assert response.status_code == 200
@@ -47,7 +40,7 @@ def test_get_me_uses_username_from_token_and_filters_attributes(client, monkeypa
     user_service.get_user.assert_called_once_with("user-123")
 
 
-def test_patch_me_passes_only_allowed_fields(client, monkeypatch):
+def test_patch_me_uses_gateway_user_id(client, monkeypatch):
     user_service = Mock()
     user_service.update_user.return_value = {
         "email": "new@example.com",
@@ -59,7 +52,7 @@ def test_patch_me_passes_only_allowed_fields(client, monkeypatch):
 
     response = client.patch(
         "/api/v1/me",
-        headers={"Authorization": "Bearer valid-token"},
+        headers={"X-User-Id": "user-123"},
         json={"email": "new@example.com", "first_name": "Jane"},
     )
 
@@ -77,11 +70,17 @@ def test_patch_me_passes_only_allowed_fields(client, monkeypatch):
 def test_patch_me_rejects_forbidden_fields(client):
     response = client.patch(
         "/api/v1/me",
-        headers={"Authorization": "Bearer valid-token"},
+        headers={"X-User-Id": "user-123"},
         json={"role": "admin"},
     )
 
     assert response.status_code == 422
+
+
+def test_me_requires_gateway_user_id(client):
+    response = client.get("/api/v1/me")
+
+    assert response.status_code == 401
 
 
 def test_user_service_returns_404_for_missing_user():

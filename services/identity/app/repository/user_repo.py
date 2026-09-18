@@ -1,7 +1,7 @@
-import boto3  
+import boto3  # type: ignore[import-untyped]
 from typing import Any
 from app.core.config import settings
-from botocore.exceptions import ClientError  
+from botocore.exceptions import ClientError  # type: ignore[import-untyped]
 
 
 class UserRepository:

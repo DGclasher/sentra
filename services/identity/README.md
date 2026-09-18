@@ -86,12 +86,7 @@ identity/
 
 ## Authentication
 
-Authentication is handled via Cognito JWT tokens. The following placeholder functions exist in `app/core/auth.py`:
-- `validate_cognito_token(token)` - Validate JWT token
-- `get_current_user_id(token)` - Extract user ID from token
-- `get_current_organization_id(token)` - Extract organization context from token
-
-**Note: Authentication logic is not implemented. Token validation must be implemented with actual Cognito client.**
+Authentication is handled by API Gateway. It passes the authenticated identity in the `X-User-Id` header. The identity service uses that header as the `Users.userId` value for `/api/v1/me`; it does not extract a username from a request token or accept a user ID from query parameters or request bodies.
 
 ## Local Development
 
@@ -123,11 +118,6 @@ docker run -p 8000:8000 identity-service
 - [ ] Implement database access with actual ORM (SQLAlchemy/Tortoise)
 - [ ] Connect to DynamoDB or preferred datastore
 - [ ] Implement connection pooling
-
-### Authentication
-- [ ] Implement Cognito JWT validation
-- [ ] Add token refresh logic
-- [ ] Implement authorization middleware
 
 ### Validation
 - [ ] Add request/response validation
