@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from app.api import routes
+from app.api import admin_routes
 
 app = FastAPI(title="Identity Service")
 
 app.include_router(routes.router, tags=["User profile"])
-
+app.include_router(admin_routes.router, tags=["Admin"])
 
 @app.get("/", tags=["Health"])
 def root():
