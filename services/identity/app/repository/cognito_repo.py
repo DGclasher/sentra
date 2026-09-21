@@ -45,7 +45,6 @@ class CognitoRepository:
 
             user = response["User"]
 
-            # Cognito's unique user ID
             user_sub = next(
                 (
                     attribute["Value"]
@@ -82,18 +81,158 @@ class CognitoRepository:
                 "Unable to create Cognito user"
             ) from error
 
-    def delete_staff_user(
+    def get_staff_user(
         self,
-        cognito_username: str
+        cognito_username: str,
+    ) -> dict[str, Any]:
+
+        try:
+            response = self.cognito.admin_get_user(
+                UserPoolId=self.user_pool_id,
+                Username=cognito_username,
+            )
+
+            return response
+
+        except ClientError as error:
+
+            error_code = (
+                error.response
+                .get("Error", {})
+                .get("Code")
+            )
+
+            if error_code == "UserNotFoundException":
+                raise ValueError(
+                    "Cognito user not found"
+                ) from error
+
+            raise RuntimeError(
+                "Unable to retrieve Cognito user"
+            ) from error
+
+    def update_staff_user(
+        self,
+        cognito_username: str,
+        email: str | None = None,
+        first_name: str | None = None,
+        last_name: str | None = None,
     ) -> None:
 
-            try:
-                self.cognito.admin_delete_user(
-                    UserPoolId=self.user_pool_id,
-                    Username=cognito_username,
-                )
+        attributes = []
 
-            except ClientError as error:
-                raise RuntimeError(
-                    "Unable to delete Cognito user"
+        if email is not None:
+            attributes.append(
+                {
+                    "Name": "email",
+                    "Value": email,
+                }
+            )
+
+        if first_name is not None:
+            attributes.append(
+                {
+                    "Name": "given_name",
+                    "Value": first_name,
+                }
+            )
+
+        if last_name is not None:
+            attributes.append(
+                {
+                    "Name": "family_name",
+                    "Value": last_name,
+                }
+            )
+
+        if not attributes:
+            return
+
+        try:
+            self.cognito.admin_update_user_attributes(
+                UserPoolId=self.user_pool_id,
+                Username=cognito_username,
+                UserAttributes=attributes,
+            )
+
+        except ClientError as error:
+
+            error_code = (
+                error.response
+                .get("Error", {})
+                .get("Code")
+            )
+
+            if error_code == "UserNotFoundException":
+                raise ValueError(
+                    "Cognito user not found"
                 ) from error
+
+            if error_code == "AliasExistsException":
+                raise ValueError(
+                    "A user with this email already exists"
+                ) from error
+
+            raise RuntimeError(
+                "Unable to update Cognito user"
+            ) from error
+
+    def delete_staff_user(
+        self,
+        cognito_username: str,
+    ) -> None:
+
+        try:
+            self.cognito.admin_delete_user(
+                UserPoolId=self.user_pool_id,
+                Username=cognito_username,
+            )
+
+        except ClientError as error:
+
+            error_code = (
+                error.response
+                .get("Error", {})
+                .get("Code")
+            )
+
+            if error_code == "UserNotFoundException":
+                raise ValueError(
+                    "Cognito user not found"
+                ) from error
+
+            raise RuntimeError(
+                "Unable to delete Cognito user"
+            ) from error
+
+    def list_staff_users(self) -> list[dict[str, Any]]:
+
+        users = []
+        pagination_token = None
+
+        try:
+            while True:
+
+                params = {
+                    "UserPoolId": self.user_pool_id,
+                }
+
+                if pagination_token:
+                    params["PaginationToken"] = pagination_token
+
+                response = self.cognito.list_users(**params)
+
+                users.extend(response.get("Users", []))
+
+                pagination_token = response.get("PaginationToken")
+
+                if not pagination_token:
+                    break
+
+            return users
+
+        except ClientError as error:
+            raise RuntimeError(
+                "Unable to retrieve Cognito users"
+            ) from error
+
