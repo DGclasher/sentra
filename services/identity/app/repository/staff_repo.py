@@ -1,3 +1,4 @@
+
 import boto3  # type: ignore[import-untyped]
 from typing import Any
 
@@ -30,7 +31,7 @@ class StaffRepository:
     ) -> dict[str, Any]:
 
         try:
-            response = self.staff_table.put_item(
+            self.staff_table.put_item(
                 Item=staff,
                 ConditionExpression="attribute_not_exists(staffId)"
             )
@@ -38,6 +39,7 @@ class StaffRepository:
             return staff
 
         except ClientError as error:
+
             if (
                 error.response.get("Error", {}).get("Code")
                 == "ConditionalCheckFailedException"
@@ -57,23 +59,13 @@ class StaffRepository:
     ) -> dict[str, Any] | None:
 
         try:
-            print("GET_STAFF CALLED WITH:", staff_id)
-
             response = self.staff_table.get_item(
                 Key={"staffId": staff_id}
             )
 
-            print("STAFF TABLE RESPONSE:", response)
-
-            staff = response.get("Item")
-
-            if staff:
-                print("FOUND IN STAFF TABLE:", staff)
-
-            return staff
+            return response.get("Item")
 
         except ClientError as error:
-            print("DYNAMODB ERROR:", error)
 
             raise RuntimeError(
                 "Unable to read staff profile"
@@ -89,8 +81,6 @@ class StaffRepository:
 
             staffs.extend(response.get("Items", []))
 
-            # DynamoDB scan can return paginated results.
-            # Continue until there is no LastEvaluatedKey.
             while "LastEvaluatedKey" in response:
 
                 response = self.staff_table.scan(
@@ -102,7 +92,6 @@ class StaffRepository:
             return staffs
 
         except ClientError as error:
-            print("DYNAMODB ERROR:", error)
 
             raise RuntimeError(
                 "Unable to retrieve staff list"
@@ -143,6 +132,8 @@ class StaffRepository:
                 ReturnValues="ALL_NEW",
             )
 
+            return response.get("Attributes")
+
         except ClientError as error:
 
             if (
@@ -155,23 +146,28 @@ class StaffRepository:
                 "Unable to update staff profile"
             ) from error
 
-        return response.get("Attributes")
-
     # DELETE
     def delete_staff(
-        self,
-        staff_id: str
+    self,
+    staff_id: str
     ) -> bool:
 
         try:
+            print("DELETE STAFF ID:", staff_id)
+
             response = self.staff_table.delete_item(
                 Key={"staffId": staff_id},
                 ConditionExpression="attribute_exists(staffId)"
             )
 
+            print("DELETE RESPONSE:", response)
+
             return True
 
         except ClientError as error:
+
+            print("DYNAMODB DELETE ERROR:", error)
+            print("ERROR RESPONSE:", error.response)
 
             if (
                 error.response.get("Error", {}).get("Code")
