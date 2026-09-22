@@ -36,6 +36,10 @@ class CognitoRepository:
                         "Value": first_name,
                     },
                     {
+                        "Name": "email_verified",
+                        "Value": "true"
+                    },
+                    {
                         "Name": "family_name",
                         "Value": last_name,
                     },
@@ -126,6 +130,13 @@ class CognitoRepository:
                 {
                     "Name": "email",
                     "Value": email,
+                }
+            )
+
+            attributes.append(
+                {
+                    "Name": "email_verified",
+                    "Value": "true",
                 }
             )
 
