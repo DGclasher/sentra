@@ -40,6 +40,10 @@ class TicketService:
         self._require_staff(user)
         return self.repository.get_available_tickets()
 
+    def list_admin_tickets(self, user: CurrentUser) -> list[dict]:
+        self._require_admin(user)
+        return self.repository.get_all_tickets()
+
     def get_user_ticket(self, user: CurrentUser, ticket_id: str) -> dict:
         self._require_user(user)
         ticket = self._get_ticket(ticket_id)
@@ -53,6 +57,10 @@ class TicketService:
         if ticket.get("assignedStaffId") is not None and ticket.get("assignedStaffId") == user.user_id:
             return ticket
         raise HTTPException(status_code=404, detail="Ticket not found")
+
+    def get_admin_ticket(self, user: CurrentUser, ticket_id: str) -> dict:
+        self._require_admin(user)
+        return self._get_ticket(ticket_id)
 
     def accept_ticket(self, user: CurrentUser, ticket_id: str) -> dict:
         self._require_staff(user)
@@ -73,6 +81,30 @@ class TicketService:
             )
         return ticket
 
+    def accept_admin_ticket(self, user: CurrentUser, ticket_id: str) -> dict:
+        self._require_admin(user)
+        ticket = self.repository.accept_ticket(
+            ticket_id, user.user_id, self._now())
+        if ticket is None:
+            raise HTTPException(
+                status_code=409, detail="Ticket is no longer available")
+        return ticket
+
+    def reject_admin_ticket(self, user: CurrentUser, ticket_id: str) -> dict:
+        self._require_admin(user)
+        ticket = self.repository.reject_ticket(
+            ticket_id, user.user_id, self._now())
+        if ticket is None:
+            raise HTTPException(
+                status_code=409, detail="Ticket is assigned to another staff member"
+            )
+        return ticket
+
+    def delete_ticket(self, user: CurrentUser, ticket_id: str) -> None:
+        self._require_admin(user)
+        if not self.repository.delete_ticket(ticket_id):
+            raise HTTPException(status_code=404, detail="Ticket not found")
+
     def add_user_message(
         self, user: CurrentUser, ticket_id: str, data: MessageCreate
     ) -> dict:
@@ -91,6 +123,16 @@ class TicketService:
 
     def get_staff_messages(self, user: CurrentUser, ticket_id: str) -> list[dict]:
         self.get_staff_ticket(user, ticket_id)
+        return self.repository.get_messages(ticket_id)
+
+    def add_admin_message(
+        self, user: CurrentUser, ticket_id: str, data: MessageCreate
+    ) -> dict:
+        self.get_admin_ticket(user, ticket_id)
+        return self._add_message(user, ticket_id, data)
+
+    def get_admin_messages(self, user: CurrentUser, ticket_id: str) -> list[dict]:
+        self.get_admin_ticket(user, ticket_id)
         return self.repository.get_messages(ticket_id)
 
     def _add_message(
@@ -120,6 +162,12 @@ class TicketService:
         if not user.is_staff:
             raise HTTPException(
                 status_code=403, detail="Staff access required")
+
+    @staticmethod
+    def _require_admin(user: CurrentUser) -> None:
+        if user.role.value != "admin":
+            raise HTTPException(
+                status_code=403, detail="Admin access required")
 
     @staticmethod
     def _require_user(user: CurrentUser) -> None:

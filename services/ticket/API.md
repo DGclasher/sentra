@@ -381,3 +381,128 @@ GET /api/v1/staff/tickets/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a/messages
 Success `200`: returns an array of message objects.
 
 Relevant errors: `401` for missing/unknown identity, `403` for a regular user identity, and `404` for a missing or differently assigned ticket.
+
+## Admin Tickets
+
+Admin routes require `X-User-Id` for an identity whose role is `admin`. Admins can access tickets and messages regardless of ticket ownership or assignment. Request identity fields are never accepted from client input.
+
+### `GET /api/v1/admin/tickets`
+
+Lists all tickets.
+
+Required headers:
+
+```http
+X-User-Id: admin-123
+```
+
+Success `200`: returns an array of ticket objects.
+
+Relevant errors: `401` for missing/unknown identity and `403` for non-admin identities.
+
+### `GET /api/v1/admin/tickets/available`
+
+Lists open, unassigned tickets, using the same available-ticket behavior as staff routes.
+
+Required headers:
+
+```http
+X-User-Id: admin-123
+```
+
+Success `200`: returns an array of available ticket objects.
+
+Relevant errors: `401` for missing/unknown identity and `403` for non-admin identities.
+
+### `GET /api/v1/admin/tickets/{ticket_id}`
+
+Returns any ticket by ID.
+
+Required headers:
+
+```http
+X-User-Id: admin-123
+```
+
+Success `200`: returns a ticket object.
+
+Relevant errors: `401` for missing/unknown identity, `403` for non-admin identities, and `404` when the ticket does not exist.
+
+### `POST /api/v1/admin/tickets/{ticket_id}/accept`
+
+Atomically claims an available ticket for the authenticated admin and changes its status to `IN_PROGRESS`.
+
+Required headers:
+
+```http
+X-User-Id: admin-123
+```
+
+Success `200`: returns the updated ticket.
+
+Relevant errors: `401` for missing/unknown identity, `403` for non-admin identities, and `409` when the ticket is no longer available.
+
+### `POST /api/v1/admin/tickets/{ticket_id}/reject`
+
+Releases an available ticket or a ticket assigned to the authenticated admin, resetting it to `OPEN`.
+
+Required headers:
+
+```http
+X-User-Id: admin-123
+```
+
+Success `200`: returns the updated ticket.
+
+Relevant errors: `401` for missing/unknown identity, `403` for non-admin identities, and `409` when the ticket is assigned to another staff member.
+
+### `DELETE /api/v1/admin/tickets/{ticket_id}`
+
+Deletes a ticket and its associated messages. The delete operation is admin-only.
+
+Required headers:
+
+```http
+X-User-Id: admin-123
+```
+
+Success `204`: no response body.
+
+Relevant errors: `401` for missing/unknown identity, `403` for non-admin identities, and `404` when the ticket does not exist.
+
+### `POST /api/v1/admin/tickets/{ticket_id}/messages`
+
+Adds a message to any existing ticket.
+
+Required headers:
+
+```http
+X-User-Id: admin-123
+Content-Type: application/json
+```
+
+Request:
+
+```json
+{
+  "content": "Reviewed by an administrator."
+}
+```
+
+Success `201`: returns the created message object.
+
+Relevant errors: `401` for missing/unknown identity, `403` for non-admin identities, `404` when the ticket does not exist, and `422` for an invalid request.
+
+### `GET /api/v1/admin/tickets/{ticket_id}/messages`
+
+Returns messages for any existing ticket.
+
+Required headers:
+
+```http
+X-User-Id: admin-123
+```
+
+Success `200`: returns an array of message objects.
+
+Relevant errors: `401` for missing/unknown identity, `403` for non-admin identities, and `404` when the ticket does not exist.

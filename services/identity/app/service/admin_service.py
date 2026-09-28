@@ -249,15 +249,12 @@ class AdminService:
         staff_id: str
     ) -> dict:
 
-        # Check requesting user
         admin = self.staff_repo.get_staff(user_id)
-
         if admin is None:
             raise HTTPException(
                 status_code=404,
                 detail="Admin user not found"
             )
-
         if admin.get("role") != "admin":
             raise HTTPException(
                 status_code=403,
@@ -266,7 +263,6 @@ class AdminService:
 
         # Find existing staff
         staff = self.staff_repo.get_staff(staff_id)
-
         if staff is None:
             raise HTTPException(
                 status_code=404,
@@ -281,6 +277,20 @@ class AdminService:
                 detail="Staff Cognito username is missing"
             )
 
+        # Mark staff as deleting in DynamoDB
+        try:
+            self.staff_repo.update_staff(
+                staff_id=staff_id,
+                updates={
+                    "status": "DELETING"
+                }
+            )
+        except Exception as error:
+            raise HTTPException(
+                status_code=500,
+                detail="Unable to mark staff as deleting"
+            ) from error
+
         # Delete from Cognito first
         try:
             self.cognito_repo.delete_staff_user(
@@ -288,17 +298,39 @@ class AdminService:
             )
 
         except ValueError as error:
+            try:
+                # Roll back DynamoDB status
+                self.staff_repo.update_staff(
+                    staff_id=staff_id,
+                    updates={
+                        "status": "ACTIVE"
+                    }
+                )
+            except Exception:
+                pass
+
             raise HTTPException(
                 status_code=404,
                 detail=str(error)
             ) from error
 
         except Exception as error:
+            # Cognito deletion failed, roll back DynamoDB status
+            try:
+                self.staff_repo.update_staff(
+                    staff_id=staff_id,
+                    updates={
+                        "status": "ACTIVE"
+                    }
+                )
+            except Exception:
+                pass
             raise HTTPException(
                 status_code=500,
                 detail="Unable to delete Cognito user"
             ) from error
 
+        # Cognito deletion succeeded, now delete from DynamoDB
         # Delete from DynamoDB
         try:
             deleted = self.staff_repo.delete_staff(
@@ -321,4 +353,3 @@ class AdminService:
             "message": "Staff deleted successfully",
             "staff_id": staff_id,
         }
-

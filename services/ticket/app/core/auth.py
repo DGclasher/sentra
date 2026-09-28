@@ -25,3 +25,9 @@ def require_staff(user: CurrentUser) -> CurrentUser:
     if user.role not in {UserRole.STAFF, UserRole.ADMIN}:
         raise HTTPException(status_code=403, detail="Staff access required")
     return user
+
+
+def require_admin(user: CurrentUser) -> CurrentUser:
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user

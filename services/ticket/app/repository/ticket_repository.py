@@ -42,9 +42,28 @@ class TicketRepository:
         )
         return response.get("Items", [])
 
+    def get_all_tickets(self) -> list[dict[str, Any]]:
+        response = self.tickets.scan()
+        return response.get("Items", [])
+
     def get_ticket(self, ticket_id: str) -> dict[str, Any] | None:
         print("Ticket ID from get_ticket function call", ticket_id)
         return self.tickets.get_item(Key={"ticketId": ticket_id}).get("Item")
+
+    def delete_ticket(self, ticket_id: str) -> bool:
+        ticket = self.get_ticket(ticket_id)
+        if ticket is None:
+            return False
+
+        messages = self.messages.scan(
+            FilterExpression="ticketId = :ticket_id",
+            ExpressionAttributeValues={":ticket_id": ticket_id},
+        ).get("Items", [])
+        for message in messages:
+            self.messages.delete_item(Key={"messageId": message["messageId"]})
+
+        self.tickets.delete_item(Key={"ticketId": ticket_id})
+        return True
 
     def accept_ticket(
         self, ticket_id: str, staff_id: str, updated_at: datetime
