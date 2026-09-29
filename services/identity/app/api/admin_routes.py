@@ -13,7 +13,7 @@ from app.domain.models import (
 from app.service.admin_service import AdminService
 
 
-router = APIRouter(prefix="/api/v1/admin")
+router = APIRouter(prefix="/api/v1/identity/admin")
 
 admin_service = AdminService()
 
@@ -85,4 +85,3 @@ def delete_staff(
         user_id,
         staff_id
     )
-

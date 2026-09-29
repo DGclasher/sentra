@@ -7,7 +7,7 @@ from app.schemas.ticket import TicketResponse
 from app.service.admin_ticket_service import AdminTicketService
 
 
-router = APIRouter(prefix="/api/v1/admin/tickets", tags=["Admin tickets"])
+router = APIRouter(prefix="/api/v1/tickets/admin", tags=["Admin tickets"])
 ticket_service = AdminTicketService()
 
 

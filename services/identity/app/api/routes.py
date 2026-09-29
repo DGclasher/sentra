@@ -4,7 +4,7 @@ from app.core.auth import get_current_user_id
 from app.domain.models import UserProfileResponse, UserProfileUpdate
 from app.service.user_service import UserService
 
-router = APIRouter(prefix="/api/v1")
+router = APIRouter(prefix="/api/v1/identity")
 user_service = UserService()
 
 

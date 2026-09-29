@@ -68,6 +68,7 @@ class AdminService:
             "first_name": profile.first_name,
             "last_name": profile.last_name,
             "role": profile.role,
+            "status": "ACTIVE",
         }
 
         try:

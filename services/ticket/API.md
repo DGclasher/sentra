@@ -6,7 +6,7 @@ Ticket data is stored in the `Tickets` table and messages are stored in the `Mes
 
 ## Common Authentication
 
-All `/api/v1/user/*` and `/api/v1/staff/*` endpoints require:
+All `/api/v1/tickets/user/*` and `/api/v1/tickets/staff/*` endpoints require:
 
 ```http
 X-User-Id: user-123
@@ -65,7 +65,7 @@ Success `200`:
 
 User routes operate only on tickets whose `userId` matches the authenticated `X-User-Id`.
 
-### `POST /api/v1/user/tickets`
+### `POST /api/v1/tickets/user`
 
 Creates an open ticket for the authenticated user. The service assigns `ticketId`, `userId`, `status`, `assignedStaffId`, `createdAt`, and `updatedAt`.
 
@@ -102,7 +102,7 @@ Success `201`:
 
 Relevant errors: `401` for missing/unknown identity, `403` for a staff/admin identity, and `422` for an invalid request or extra fields such as `userId` or `assignedStaffId`.
 
-### `GET /api/v1/user/tickets`
+### `GET /api/v1/tickets/user`
 
 Lists only tickets owned by the authenticated user.
 
@@ -115,7 +115,7 @@ X-User-Id: user-123
 Example:
 
 ```http
-GET /api/v1/user/tickets
+GET /api/v1/tickets/user
 ```
 
 Success `200`:
@@ -137,7 +137,7 @@ Success `200`:
 
 Relevant errors: `401` for missing/unknown identity and `403` for a staff/admin identity.
 
-### `GET /api/v1/user/tickets/{ticket_id}`
+### `GET /api/v1/tickets/user/{ticket_id}`
 
 Returns one ticket only when it belongs to the authenticated user.
 
@@ -150,14 +150,14 @@ X-User-Id: user-123
 Example:
 
 ```http
-GET /api/v1/user/tickets/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a
+GET /api/v1/tickets/user/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a
 ```
 
 Success `200`: returns the ticket object shown in the previous response.
 
 Relevant errors: `401` for missing/unknown identity, `403` for a staff/admin identity, and `404` when the ticket does not exist or belongs to another user.
 
-### `POST /api/v1/user/tickets/{ticket_id}/messages`
+### `POST /api/v1/tickets/user/{ticket_id}/messages`
 
 Adds a message to a ticket owned by the authenticated user.
 
@@ -191,7 +191,7 @@ Success `201`:
 
 Relevant errors: `401` for missing/unknown identity, `403` for a staff/admin identity, `404` for a missing or another user's ticket, and `422` for an invalid request.
 
-### `GET /api/v1/user/tickets/{ticket_id}/messages`
+### `GET /api/v1/tickets/user/{ticket_id}/messages`
 
 Returns messages only for a ticket owned by the authenticated user.
 
@@ -204,7 +204,7 @@ X-User-Id: user-123
 Example:
 
 ```http
-GET /api/v1/user/tickets/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a/messages
+GET /api/v1/tickets/user/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a/messages
 ```
 
 Success `200`:
@@ -228,7 +228,7 @@ Relevant errors: `401` for missing/unknown identity, `403` for a staff/admin ide
 
 Staff and admin routes use the authenticated `X-User-Id` as the staff identity. A staff member can access only tickets assigned to that ID.
 
-### `GET /api/v1/staff/tickets`
+### `GET /api/v1/tickets/staff`
 
 Lists tickets assigned to the authenticated staff/admin identity.
 
@@ -241,14 +241,14 @@ X-User-Id: staff-123
 Example:
 
 ```http
-GET /api/v1/staff/tickets
+GET /api/v1/tickets/staff
 ```
 
 Success `200`: returns an array of ticket objects.
 
 Relevant errors: `401` for missing/unknown identity and `403` for a regular user identity.
 
-### `GET /api/v1/staff/tickets/available`
+### `GET /api/v1/tickets/staff/available`
 
 Lists open, unassigned tickets available for staff/admin acceptance.
 
@@ -261,14 +261,14 @@ X-User-Id: staff-123
 Example:
 
 ```http
-GET /api/v1/staff/tickets/available
+GET /api/v1/tickets/staff/available
 ```
 
 Success `200`: returns an array of tickets with `status` equal to `OPEN` and no assigned staff identity.
 
 Relevant errors: `401` for missing/unknown identity and `403` for a regular user identity.
 
-### `GET /api/v1/staff/tickets/{ticket_id}`
+### `GET /api/v1/tickets/staff/{ticket_id}`
 
 Returns a ticket only when it is assigned to the authenticated staff/admin identity.
 
@@ -281,14 +281,14 @@ X-User-Id: staff-123
 Example:
 
 ```http
-GET /api/v1/staff/tickets/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a
+GET /api/v1/tickets/staff/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a
 ```
 
 Success `200`: returns the ticket object shown above.
 
 Relevant errors: `401` for missing/unknown identity, `403` for a regular user identity, and `404` when the ticket does not exist or is assigned to another staff member.
 
-### `POST /api/v1/staff/tickets/{ticket_id}/accept`
+### `POST /api/v1/tickets/staff/{ticket_id}/accept`
 
 Atomically claims an available open ticket for the authenticated staff/admin identity and changes its status to `IN_PROGRESS`.
 
@@ -301,14 +301,14 @@ X-User-Id: staff-123
 Example:
 
 ```http
-POST /api/v1/staff/tickets/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a/accept
+POST /api/v1/tickets/staff/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a/accept
 ```
 
 Success `200`: returns the updated ticket with `assignedStaffId` set to `staff-123` and `status` set to `IN_PROGRESS`.
 
 Relevant errors: `401` for missing/unknown identity, `403` for a regular user identity, and `409` when the ticket is missing, no longer open, or already assigned.
 
-### `POST /api/v1/staff/tickets/{ticket_id}/reject`
+### `POST /api/v1/tickets/staff/{ticket_id}/reject`
 
 Releases an available ticket or a ticket currently assigned to the authenticated staff/admin identity. The ticket is reset to `OPEN` with no assigned staff identity.
 
@@ -321,14 +321,14 @@ X-User-Id: staff-123
 Example:
 
 ```http
-POST /api/v1/staff/tickets/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a/reject
+POST /api/v1/tickets/staff/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a/reject
 ```
 
 Success `200`: returns the updated ticket with `status` set to `OPEN` and `assignedStaffId` set to `null`.
 
 Relevant errors: `401` for missing/unknown identity, `403` for a regular user identity, and `409` when the ticket is assigned to another staff member or cannot be released.
 
-### `POST /api/v1/staff/tickets/{ticket_id}/messages`
+### `POST /api/v1/tickets/staff/{ticket_id}/messages`
 
 Adds a message to a ticket assigned to the authenticated staff/admin identity.
 
@@ -362,7 +362,7 @@ Success `201`:
 
 Relevant errors: `401` for missing/unknown identity, `403` for a regular user identity, `404` for a missing or differently assigned ticket, and `422` for an invalid request.
 
-### `GET /api/v1/staff/tickets/{ticket_id}/messages`
+### `GET /api/v1/tickets/staff/{ticket_id}/messages`
 
 Returns messages only for a ticket assigned to the authenticated staff/admin identity.
 
@@ -375,7 +375,7 @@ X-User-Id: staff-123
 Example:
 
 ```http
-GET /api/v1/staff/tickets/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a/messages
+GET /api/v1/tickets/staff/7d8a0d31-52c2-4cd8-a2c6-2b9b6a8d0f4a/messages
 ```
 
 Success `200`: returns an array of message objects.
@@ -386,7 +386,7 @@ Relevant errors: `401` for missing/unknown identity, `403` for a regular user id
 
 Admin routes require `X-User-Id` for an identity whose role is `admin`. Admins can access tickets and messages regardless of ticket ownership or assignment. Request identity fields are never accepted from client input.
 
-### `GET /api/v1/admin/tickets`
+### `GET /api/v1/tickets/admin`
 
 Lists all tickets.
 
@@ -400,7 +400,7 @@ Success `200`: returns an array of ticket objects.
 
 Relevant errors: `401` for missing/unknown identity and `403` for non-admin identities.
 
-### `GET /api/v1/admin/tickets/available`
+### `GET /api/v1/tickets/admin/available`
 
 Lists open, unassigned tickets, using the same available-ticket behavior as staff routes.
 
@@ -414,7 +414,7 @@ Success `200`: returns an array of available ticket objects.
 
 Relevant errors: `401` for missing/unknown identity and `403` for non-admin identities.
 
-### `GET /api/v1/admin/tickets/{ticket_id}`
+### `GET /api/v1/tickets/admin/{ticket_id}`
 
 Returns any ticket by ID.
 
@@ -428,7 +428,7 @@ Success `200`: returns a ticket object.
 
 Relevant errors: `401` for missing/unknown identity, `403` for non-admin identities, and `404` when the ticket does not exist.
 
-### `POST /api/v1/admin/tickets/{ticket_id}/accept`
+### `POST /api/v1/tickets/admin/{ticket_id}/accept`
 
 Atomically claims an available ticket for the authenticated admin and changes its status to `IN_PROGRESS`.
 
@@ -442,7 +442,7 @@ Success `200`: returns the updated ticket.
 
 Relevant errors: `401` for missing/unknown identity, `403` for non-admin identities, and `409` when the ticket is no longer available.
 
-### `POST /api/v1/admin/tickets/{ticket_id}/reject`
+### `POST /api/v1/tickets/admin/{ticket_id}/reject`
 
 Releases an available ticket or a ticket assigned to the authenticated admin, resetting it to `OPEN`.
 
@@ -456,7 +456,7 @@ Success `200`: returns the updated ticket.
 
 Relevant errors: `401` for missing/unknown identity, `403` for non-admin identities, and `409` when the ticket is assigned to another staff member.
 
-### `DELETE /api/v1/admin/tickets/{ticket_id}`
+### `DELETE /api/v1/tickets/admin/{ticket_id}`
 
 Deletes a ticket and its associated messages. The delete operation is admin-only.
 
@@ -470,7 +470,7 @@ Success `204`: no response body.
 
 Relevant errors: `401` for missing/unknown identity, `403` for non-admin identities, and `404` when the ticket does not exist.
 
-### `POST /api/v1/admin/tickets/{ticket_id}/messages`
+### `POST /api/v1/tickets/admin/{ticket_id}/messages`
 
 Adds a message to any existing ticket.
 
@@ -493,7 +493,7 @@ Success `201`: returns the created message object.
 
 Relevant errors: `401` for missing/unknown identity, `403` for non-admin identities, `404` when the ticket does not exist, and `422` for an invalid request.
 
-### `GET /api/v1/admin/tickets/{ticket_id}/messages`
+### `GET /api/v1/tickets/admin/{ticket_id}/messages`
 
 Returns messages for any existing ticket.
 

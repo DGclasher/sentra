@@ -7,7 +7,7 @@ from app.schemas.ticket import TicketCreate, TicketResponse
 from app.service.ticket_service import TicketService
 
 
-router = APIRouter(prefix="/api/v1/user/tickets", tags=["User tickets"])
+router = APIRouter(prefix="/api/v1/tickets/user", tags=["User tickets"])
 ticket_service = TicketService()
 
 

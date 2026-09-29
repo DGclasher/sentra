@@ -25,7 +25,7 @@ def test_get_me_uses_gateway_user_id_and_filters_attributes(client, monkeypatch)
     monkeypatch.setattr(routes, "user_service", user_service)
 
     response = client.get(
-        "/api/v1/me",
+        "/api/v1/identity/me",
         headers={"X-User-Id": "user-123"},
         params={"userId": "attacker"},
     )
@@ -51,7 +51,7 @@ def test_patch_me_uses_gateway_user_id(client, monkeypatch):
     monkeypatch.setattr(routes, "user_service", user_service)
 
     response = client.patch(
-        "/api/v1/me",
+        "/api/v1/identity/me",
         headers={"X-User-Id": "user-123"},
         json={"email": "new@example.com", "first_name": "Jane"},
     )
@@ -69,7 +69,7 @@ def test_patch_me_uses_gateway_user_id(client, monkeypatch):
 
 def test_patch_me_rejects_forbidden_fields(client):
     response = client.patch(
-        "/api/v1/me",
+        "/api/v1/identity/me",
         headers={"X-User-Id": "user-123"},
         json={"role": "admin"},
     )
@@ -78,7 +78,7 @@ def test_patch_me_rejects_forbidden_fields(client):
 
 
 def test_me_requires_gateway_user_id(client):
-    response = client.get("/api/v1/me")
+    response = client.get("/api/v1/identity/me")
 
     assert response.status_code == 401
 

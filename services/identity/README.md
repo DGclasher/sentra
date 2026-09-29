@@ -42,7 +42,7 @@ identity/
 - `GET /ready` - Readiness check
 
 ### Users
-- `GET /api/v1/me` - Get current user
+- `GET /api/v1/identity/me` - Get current user
 
 ### Organizations
 - `POST /api/v1/organizations` - Create organization
@@ -86,7 +86,7 @@ identity/
 
 ## Authentication
 
-Authentication is handled by API Gateway. It passes the authenticated identity in the `X-User-Id` header. The identity service uses that header as the `Users.userId` value for `/api/v1/me`; it does not extract a username from a request token or accept a user ID from query parameters or request bodies.
+Authentication is handled by API Gateway. It passes the authenticated identity in the `X-User-Id` header. The identity service uses that header as the `Users.userId` value for `/api/v1/identity/me`; it does not extract a username from a request token or accept a user ID from query parameters or request bodies.
 
 ## Local Development
 

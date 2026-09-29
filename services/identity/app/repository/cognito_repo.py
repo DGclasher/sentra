@@ -44,7 +44,7 @@ class CognitoRepository:
                         "Value": last_name,
                     },
                 ],
-                MessageAction="SUPPRESS",
+                DesiredDeliveryMediums=["EMAIL"],
             )
 
             user = response["User"]
