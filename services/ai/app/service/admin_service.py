@@ -4,21 +4,16 @@ from pathlib import PurePosixPath
 from uuid import uuid4
 
 from fastapi import HTTPException, UploadFile, status
-from sentence_transformers import SentenceTransformer
 
-from app.core.config import settings
 from app.core.doc_helper import Document, DocumentHelper
 from app.domain.enums import DocumentStatus
 from app.domain.models import CurrentUser
 from app.repository.s3_repository import S3Repository
 from app.repository.s3_vector_repository import S3VectorRepository
 from app.schemas.document import DocumentResponse
+from app.service.embedding_service import EmbeddingError, EmbeddingService
 
 logger = logging.getLogger(__name__)
-
-
-class EmbeddingError(Exception):
-    pass
 
 
 class VectorStorageError(Exception):
@@ -26,10 +21,10 @@ class VectorStorageError(Exception):
 
 
 class AdminDocumentService:
-    def __init__(self, object_repository=None, vector_repository=None, model=None):
-        self.model_id = settings.embedding_model
-        self.model = SentenceTransformer(
-            self.model_id, device="cpu") if model is None else model
+    def __init__(self, object_repository=None, vector_repository=None,
+                 embedding_service=None, model=None):
+        self.embedding_service = embedding_service or EmbeddingService(
+            model=model)
         self.object_repository = object_repository or S3Repository()
         self.vector_repository = vector_repository or S3VectorRepository()
 
@@ -37,10 +32,7 @@ class AdminDocumentService:
         try:
             vectors = []
             for chunk_number, chunk in enumerate(chunks):
-                embedding = self.model.encode(
-                    chunk.page_content,
-                    normalize_embeddings=True,
-                ).tolist()
+                embedding = self.embedding_service.embed(chunk.page_content)
                 source = chunk.metadata.get("source", "unknown")
                 page = chunk.metadata.get("page", chunk_number)
                 vectors.append({

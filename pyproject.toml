@@ -17,7 +17,7 @@ dependencies = [
     "langchain-text-splitters>=0.2.1",
     "litellm>=1.73.6.post1",
     "mypy==1.7.0",
-    "pydantic==2.4.2",
+    "pydantic>=2.5",
     "pydantic-settings==2.0.3",
     "pylint==3.0.2",
     "pytest==7.4.3",
