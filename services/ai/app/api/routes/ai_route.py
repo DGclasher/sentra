@@ -17,4 +17,4 @@ async def get_status(user: CurrentUser = Depends(is_authenticated)):
 
 @router.post("/query", response_model=QueryResponse, status_code=status.HTTP_200_OK)
 async def query_vector_store(query: QueryRequest, user: CurrentUser = Depends(is_authenticated)):
-    return ai_service.query_ai(query)
+    return ai_service.query_ai(query, user.user_id)

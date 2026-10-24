@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     groq_api_key: str = os.getenv("GROQ_API_KEY") or ""
     staffs_table_name: str = os.getenv("STAFF_TABLE_NAME") or "Staffs"
     users_table_name: str = os.getenv("USERS_TABLE_NAME") or "Users"
+    ticket_service_url: str = os.getenv("TICKET_SERVICE_URL") or "http://localhost:8000"
 
 
 settings = Settings()

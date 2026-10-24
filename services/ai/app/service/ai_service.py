@@ -58,7 +58,7 @@ class AIService:
                     content=content, score=distance))
         return results
 
-    def query_ai(self, query_req: QueryRequest) -> dict[str, str]:
+    def query_ai(self, query_req: QueryRequest, user_id: str) -> dict[str, str]:
         vectors = self._retrieve_vectors(query_req)
         context_parts = []
         for vector in vectors:
@@ -78,7 +78,13 @@ class AIService:
         context = "\n\n--- Retrieved document chunk ---\n\n".join(
             context_parts)
         try:
-            return {"response": self.llm_gateway.chatbot(query_req.query, context)}
+            return {
+                "response": self.llm_gateway.chatbot(
+                    query_req.query,
+                    context,
+                    user_id,
+                )
+            }
         except LLMError as error:
             logger.exception("LLM response generation failed")
             raise HTTPException(

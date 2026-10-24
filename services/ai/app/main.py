@@ -1,7 +1,15 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import admin_route, ai_route
 
 app = FastAPI(title="AI Service")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=False,
+)
 
 app.include_router(admin_route.router, tags=["Admin"])
 app.include_router(ai_route.router, tags=["AI"])
