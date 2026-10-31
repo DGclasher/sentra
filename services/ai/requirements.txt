@@ -10,6 +10,7 @@ python-multipart
 pypdf>=4.0.0
 python-dotenv
 pydantic>=2.5
+pytest==7.4.3
 pydantic-settings
 python-jose[cryptography]>=3.5.0
 uvicorn[standard]
