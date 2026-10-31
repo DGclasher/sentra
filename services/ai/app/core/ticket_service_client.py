@@ -1,5 +1,9 @@
+import logging
+
 import requests
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class TicketServiceClient:
@@ -36,12 +40,17 @@ class TicketServiceClient:
             requests.RequestException: If the internal request fails.
         """
         url = f"{self.base_url}/api/v1/tickets/user"
+        logger.info(
+            "Requesting authenticated user's tickets from Ticket Service")
         response = requests.get(
             url,
             headers={"X-User-Id": user_id},
             timeout=10,
         )
-        print(f"Ticket Service response: {response.status_code} - {response.text}")
+        logger.info(
+            "Ticket Service tickets request completed with status %s",
+            response.status_code,
+        )
         response.raise_for_status()
         return response.json()
 
@@ -63,10 +72,15 @@ class TicketServiceClient:
             requests.RequestException: If the internal request fails.
         """
         url = f"{self.base_url}/api/v1/tickets/user/{ticket_id}"
+        logger.info("Requesting ticket from Ticket Service")
         response = requests.get(
             url,
             headers={"X-User-Id": user_id},
             timeout=10,
+        )
+        logger.info(
+            "Ticket Service ticket request completed with status %s",
+            response.status_code,
         )
         response.raise_for_status()
         return response.json()

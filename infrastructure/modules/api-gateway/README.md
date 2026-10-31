@@ -1,0 +1,1 @@
+HTTP API with Cognito JWT authorization, VPC Link, and proxy routes for ticket, identity, and AI services.

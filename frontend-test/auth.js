@@ -1,8 +1,8 @@
 window.SentraAuth = (() => {
-  const COGNITO_REGION = "us-east-1";
-  const COGNITO_CLIENT_ID = "17cubucr8ln5m4gralm4hh0r95";
+  const COGNITO_REGION = "us-east-2";
+  const COGNITO_CLIENT_ID = "6dsfa5lf1590nal6hh7p7lkq7u";
   const COGNITO_ENDPOINT = `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/`;
-  const API_URL = "https://29z5qm8jke.execute-api.us-east-1.amazonaws.com/test";
+  const API_URL = "https://0rvsfdkv79.execute-api.us-east-2.amazonaws.com/test";
 
   function storeTokens(authResult) {
     const accessToken = authResult && authResult.AccessToken;

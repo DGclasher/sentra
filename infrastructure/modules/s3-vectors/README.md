@@ -1,0 +1,1 @@
+Creates the S3 Vectors bucket and index used by the AI service. The index is float32, cosine distance, and defaults to 384 dimensions for the configured embedding model.

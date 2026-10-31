@@ -96,6 +96,8 @@ class LLMGateway:
         if not isinstance(parsed_arguments, dict):
             raise LLMError("Invalid tool arguments")
 
+        logger.info("LLM requested tool call: %s", name)
+
         if name == "get_my_tickets":
             if parsed_arguments:
                 raise LLMError("get_my_tickets does not accept arguments")

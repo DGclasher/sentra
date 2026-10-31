@@ -1,148 +1,85 @@
 # Identity Service
 
-User and organization management service for the Sentra platform.
+The Identity Service is a FastAPI service that manages Sentra user profiles and administrator-controlled staff accounts.
 
-## Responsibilities
+## What It Does
 
-- User account management
-- Organization creation and management
-- Organization member management
-- User roles and permissions
-- User profile management
-
-## Directory Structure
-
-```
-identity/
-├── app/
-│   ├── main.py              # FastAPI application entry point
-│   ├── api/
-│   │   ├── routes.py        # API endpoint definitions
-│   │   └── __init__.py
-│   ├── core/
-│   │   ├── config.py        # Configuration and settings
-│   │   ├── auth.py          # Cognito JWT validation (placeholder)
-│   │   └── __init__.py
-│   │   └── __init__.py
-│   ├── services/            # Business logic layer
-│   │   └── __init__.py
-│   ├── repositories/        # Data access layer (placeholder)
-│   │   └── __init__.py
-│   └── __init__.py
-├── tests/                   # Test suite (placeholder)
-├── Dockerfile               # Container image definition
-├── requirements.txt         # Python dependencies
-└── README.md               # This file
-```
+- Returns the authenticated user's profile.
+- Updates the authenticated user's email, first name, and last name.
+- Allows administrators to create, list, view, update, and delete staff accounts.
+- Provisions staff accounts in Amazon Cognito and stores staff profiles in DynamoDB.
+- Rolls back Cognito staff creation when the corresponding DynamoDB profile cannot be created.
+- Uses the `X-User-Id` request header as the caller identity supplied by the API gateway.
 
 ## API Endpoints
 
-### Health
-- `GET /health` - Health check
-- `GET /ready` - Readiness check
+User profile endpoints:
 
-### Users
-- `GET /api/v1/identity/me` - Get current user
+- `GET /api/v1/identity/me`
+- `PATCH /api/v1/identity/me`
 
-### Organizations
-- `POST /api/v1/organizations` - Create organization
-- `GET /api/v1/organizations` - List organizations
-- `GET /api/v1/organizations/{organization_id}` - Get organization
-- `PATCH /api/v1/organizations/{organization_id}` - Update organization
+Administrator staff endpoints:
 
-### Organization Members
-- `GET /api/v1/organizations/{organization_id}/members` - List members
-- `POST /api/v1/organizations/{organization_id}/members` - Add member
-- `PATCH /api/v1/organizations/{organization_id}/members/{user_id}` - Update member role
-- `DELETE /api/v1/organizations/{organization_id}/members/{user_id}` - Remove member
+- `POST /api/v1/identity/admin/staff`
+- `GET /api/v1/identity/admin/staff`
+- `GET /api/v1/identity/admin/staff/{staff_id}`
+- `PATCH /api/v1/identity/admin/staff/{staff_id}`
+- `DELETE /api/v1/identity/admin/staff/{staff_id}`
 
-### User
-- `email` - Email address
-- `first_name` - User first name
-- `last_name` - User last name
-- `created_at` - Creation timestamp
-- `owner_id` - ID of organization owner
-- `created_at` - Creation timestamp
+Health endpoints:
 
-### OrganizationMember
-- `user_id` - Member user ID
-- `role` - Role (owner, admin, member, viewer)
-- `joined_at` - Membership start timestamp
+- `GET /health`
+- `GET /ready`
 
-### UserProfile
-- `profile_id` - Unique identifier
-- `user_id` - Associated user
-- `avatar_url` - Profile picture URL
-- `bio` - User biography
-- `phone` - Phone number
-
-## Enums
-
-### Role
-- `owner` - Organization owner
-- `admin` - Administrator
-- `member` - Regular member
-- `viewer` - Read-only member
-
-## Authentication
-
-Authentication is handled by API Gateway. It passes the authenticated identity in the `X-User-Id` header. The identity service uses that header as the `Users.userId` value for `/api/v1/identity/me`; it does not extract a username from a request token or accept a user ID from query parameters or request bodies.
-
-## Local Development
-
-### Setup
-```bash
-cd services/identity
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### Run
-```bash
-python -m uvicorn app.main:app --reload
-```
-
-Server will be available at `http://localhost:8000`
-
-### Run Tests
-
-### Lint and Type Check
-```
-
-```bash
-docker build -t identity-service .
-```bash
-docker run -p 8000:8000 identity-service
-```
-- [ ] Implement database access with actual ORM (SQLAlchemy/Tortoise)
-- [ ] Connect to DynamoDB or preferred datastore
-- [ ] Implement connection pooling
-
-### Validation
-- [ ] Add request/response validation
-- [ ] Add business logic validations
-- [ ] Add error handling middleware
-
-### Observability
-- [ ] Add logging
-- [ ] Add structured tracing
-- [ ] Add metrics
-
-### Testing
-- [ ] Write unit tests
-- [ ] Write integration tests
-- [ ] Add test database setup
+All application endpoints require `X-User-Id`. Staff administration additionally requires the caller to have the `admin` role.
 
 ## Dependencies
 
-- **fastapi** - Web framework
-- **uvicorn** - ASGI server
-- **pydantic** - Data validation
-- **pytest** - Testing framework
+Runtime dependencies are pinned or specified in `requirements.txt`:
 
-See `requirements.txt` for full dependency list.
+- Python 3.12
+- FastAPI and Uvicorn
+- Pydantic and Pydantic Settings
+- Boto3 and Botocore
+- Python dotenv
+- Email validation support
+- Python JOSE with cryptography
 
-## Notes
+Development and testing dependencies include pytest, pytest-asyncio, HTTPX, Black, mypy, and Pylint.
 
-This is a scaffold implementation. All endpoints return `NotImplementedError`. Data layer operations are placeholders.
+## AWS Dependencies
+
+The service requires access to:
+
+- Amazon DynamoDB `Users` and `Staffs` tables.
+- An Amazon Cognito User Pool for staff account administration.
+- AWS credentials with permission to read and update the DynamoDB tables, administer Cognito users, and list Cognito users.
+
+## Configuration
+
+Configuration is loaded from environment variables or a local `.env` file:
+
+```text
+AWS_REGION
+COGNITO_USER_POOL_ID
+COGNITO_CLIENT_ID
+COGNITO_CLIENT_SECRET
+DYNAMODB_USER_TABLE_NAME
+DYNAMODB_STAFF_TABLE_NAME
+DYNAMODB_ENDPOINT_URL
+```
+
+`AWS_REGION` defaults to `us-east-1`. The DynamoDB table names default to `Users` and `Staffs`. `DYNAMODB_ENDPOINT_URL` is optional and can be used for a local DynamoDB-compatible endpoint.
+
+## Run Locally
+
+```bash
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Run the tests from the service directory:
+
+```bash
+python -m pytest tests -v
+```
