@@ -2,8 +2,7 @@ import json
 import logging
 from typing import Any
 
-import litellm
-from litellm import completion
+from litellm import acompletion
 
 from app.core.ticket_service_client import TicketServiceClient
 
@@ -51,12 +50,6 @@ class LLMGateway:
     ]
 
     def __init__(self, ticket_service_client=None):
-        litellm.callbacks = []
-        litellm.success_callback = []
-        litellm.error_callback = []
-        litellm._async_success_callback = []
-        litellm._async_error_callback = []
-
         self.ticket_service_client = ticket_service_client or TicketServiceClient()
         self.system_prompt = (
             "You are a helpful assistant that answers questions using only the "
@@ -69,8 +62,12 @@ class LLMGateway:
             "details, sources, citations, or evidence."
         )
 
-    def _completion(self, messages: list[dict[str, Any]], tools: list[dict] | None):
-        return completion(
+    async def _completion(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict] | None,
+    ):
+        return await acompletion(
             model="groq/qwen/qwen3.8-27b",
             messages=messages,
             fallbacks=["openrouter/deepseek/deepseek-v4.1-flash"],
@@ -87,7 +84,7 @@ class LLMGateway:
             return item.get(key, default)
         return getattr(item, key, default)
 
-    def _run_tool(self, name: str, arguments: str, user_id: str) -> Any:
+    async def _run_tool(self, name: str, arguments: str, user_id: str) -> Any:
         try:
             parsed_arguments = json.loads(arguments or "{}")
         except json.JSONDecodeError as error:
@@ -101,20 +98,20 @@ class LLMGateway:
         if name == "get_my_tickets":
             if parsed_arguments:
                 raise LLMError("get_my_tickets does not accept arguments")
-            return self.ticket_service_client.get_my_tickets(user_id)
+            return await self.ticket_service_client.get_my_tickets(user_id)
 
         if name == "get_my_ticket":
             ticket_id = parsed_arguments.get("ticket_id")
             if not isinstance(ticket_id, str) or not ticket_id.strip():
                 raise LLMError("ticket_id is required")
-            return self.ticket_service_client.get_my_ticket(
+            return await self.ticket_service_client.get_my_ticket(
                 user_id,
                 ticket_id.strip(),
             )
 
         raise LLMError("Unsupported tool requested")
 
-    def chatbot(self, query_str: str, context: str, user_id: str) -> str:
+    async def chatbot(self, query_str: str, context: str, user_id: str) -> str:
         prompt = (
             "<user_question>\n"
             f"{query_str}\n"
@@ -132,7 +129,7 @@ class LLMGateway:
 
         try:
             for _ in range(3):
-                response = self._completion(messages, self.ticket_tools)
+                response = await self._completion(messages, self.ticket_tools)
                 message = response.choices[0].message
                 tool_calls = self._value(message, "tool_calls") or []
                 if not tool_calls:
@@ -158,7 +155,7 @@ class LLMGateway:
                         "function": {"name": name, "arguments": arguments},
                     })
                     try:
-                        result = self._run_tool(name, arguments, user_id)
+                        result = await self._run_tool(name, arguments, user_id)
                         tool_content = json.dumps(result, default=str)
                     except Exception as error:
                         logger.exception(
